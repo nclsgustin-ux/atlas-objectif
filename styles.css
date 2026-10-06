@@ -18,3 +18,20 @@
 .install-button{margin-left:0;font-size:17px}.install-button[hidden]{display:none!important}
 @media(max-width:600px){.topbar{height:62px;padding:0 11px}.top-right{gap:7px}.top-right .icon-button{margin-left:0;width:44px;height:44px;flex:0 0 44px}.top-right .timer-button{width:44px;height:44px;flex-basis:44px}.brand{gap:7px;font-size:12px}.brandmark{width:29px;height:29px}main{padding-left:12px;padding-right:12px}.text-input,.parcel-field input,.input-suffix input,.settings-grid input{font-size:16px!important}button,select{touch-action:manipulation}footer{padding-bottom:max(25px,env(safe-area-inset-bottom))}}
 .brandmark svg{width:19px;height:19px;fill:none;stroke:#17251c;stroke-width:1.8;stroke-linecap:round}.brandmark svg .brand-dot{fill:#17251c;stroke:none}
+
+/* Page navigation: each area is a focused view instead of one long dashboard. */
+[hidden]{display:none!important}
+.topbar{position:sticky;top:0;z-index:8;background:#0e1715ed;backdrop-filter:blur(14px)}
+.workspace{display:block}
+.inputs[data-page="profil"]{max-width:760px;margin:22px auto}
+.page-view{min-width:0}
+.bottom-nav{position:fixed;z-index:9;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(620px,calc(100% - 32px));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:7px;background:#17231fee;border:1px solid #405147;border-radius:16px;box-shadow:0 12px 40px #0008;backdrop-filter:blur(18px)}
+.nav-item{min-width:0;min-height:52px;padding:5px 3px;border:0;border-radius:11px;background:transparent;color:#91a197;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:500 10px var(--sans);cursor:pointer;touch-action:manipulation}
+.nav-item:hover{color:#e8f1e4;background:#213129}
+.nav-item.active{color:#d9f0b7;background:#2b3d2e}
+.nav-icon{font:20px/1 var(--sans)}
+.nav-item.active .nav-icon{color:var(--green)}
+main{padding-bottom:92px}
+footer{margin-bottom:8px}
+@media(max-width:600px){.bottom-nav{bottom:max(8px,env(safe-area-inset-bottom));width:calc(100% - 20px);padding:6px}.nav-item{min-height:50px;font-size:9px}.nav-icon{font-size:19px}main{padding-bottom:86px}.inputs[data-page="profil"]{margin:14px 0}.topbar{height:60px}.top-right .timer-button{width:42px;height:42px;flex-basis:42px}}
+@media(min-width:900px){.bottom-nav{bottom:18px}.nav-item{min-height:48px}main{padding-bottom:96px}}

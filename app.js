@@ -118,3 +118,16 @@ const installButton=$('installAppButton');let deferredInstallPrompt=null;
 const isInstalled=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 if(installButton){installButton.hidden=isInstalled();window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installButton.hidden=false});window.addEventListener('appinstalled',()=>{installButton.hidden=true;deferredInstallPrompt=null});installButton.addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installButton.hidden=true;return}const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?'Pour installer : ouvre cette page dans Safari, touche Partager, puis « Sur l’écran d’accueil ».':'Pour installer : ouvre le menu du navigateur puis choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».')})}
 if('serviceWorker'in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+
+// Focused app sections with bottom navigation; hash keeps the current page shareable.
+const pageNames=['accueil','profil','strategie','boosts'];
+function showPage(name,{updateHash=false}={}){
+ const page=pageNames.includes(name)?name:'accueil';
+ document.querySelectorAll('main [data-page]').forEach(view=>{view.hidden=view.dataset.page!==page});
+ document.querySelectorAll('.nav-item').forEach(button=>{const active=button.dataset.nav===page;button.classList.toggle('active',active);if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current')});
+ if(updateHash&&location.hash!==`#${page}`)history.replaceState(null,'',`#${page}`);
+ window.scrollTo({top:0,behavior:'instant'});
+}
+document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.nav,{updateHash:true})));
+window.addEventListener('hashchange',()=>showPage(location.hash.slice(1)));
+showPage(location.hash.slice(1));
