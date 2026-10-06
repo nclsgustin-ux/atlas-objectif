@@ -131,3 +131,21 @@ function showPage(name,{updateHash=false}={}){
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.nav,{updateHash:true})));
 window.addEventListener('hashchange',()=>showPage(location.hash.slice(1)));
 showPage(location.hash.slice(1));
+
+// Move each navigation target into its own app-level viewport.
+const appMain=document.querySelector('main');
+const homeShell=appMain?.querySelector(':scope > .page-view[data-page="accueil"]');
+const workspace=appMain?.querySelector(':scope > .workspace');
+const inputsPage=workspace?.querySelector('.inputs[data-page="profil"]');
+const results=workspace?.querySelector('.results');
+const dashboardPage=results?.querySelector(':scope > .page-view[data-page="accueil"]');
+const strategyPage=results?.querySelector(':scope > .page-view[data-page="strategie"]');
+const boostsPage=results?.querySelector(':scope > .page-view[data-page="boosts"]');
+if(appMain&&homeShell&&workspace&&inputsPage&&dashboardPage&&strategyPage&&boostsPage){
+ homeShell.append(dashboardPage);
+ appMain.insertBefore(inputsPage,workspace);
+ appMain.insertBefore(strategyPage,workspace);
+ appMain.insertBefore(boostsPage,workspace);
+ workspace.remove();
+}
+showPage(location.hash.slice(1));
