@@ -58,3 +58,4 @@ main>footer{display:none}
  main>.page-view[data-page="accueil"]:not([hidden]){padding-bottom:0}
  main>.page-view[data-page="accueil"]>.page-view{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))}
 }
+.profile-storage-note{display:block;margin-top:5px;color:#829487;font-size:9px}

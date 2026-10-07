@@ -110,7 +110,7 @@ function safeGet(key){try{return localStorage.getItem(key)}catch{return null}}
 function safeSet(key,value){try{localStorage.setItem(key,String(value))}catch{}}
 function tickAdReminder(){const due=Number(safeGet(AD_TIMER_KEY));const button=$('adReminderButton'),status=$('adReminderStatus');if(!button||!status)return;if(!due){button.dataset.timer='20m';button.setAttribute('aria-label','Démarrer le rappel de publicité Atlas Earth, 20 minutes');status.textContent='Le rappel démarre uniquement quand vous appuyez sur le bouton.';return}if(due>Date.now()){const left=Math.ceil((due-Date.now())/1000),mins=Math.floor(left/60),secs=left%60;button.dataset.timer=`${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;button.setAttribute('aria-label',`Rappel en cours, prochaine pub de 1 AB dans ${mins} minutes et ${secs} secondes; appuyez pour recommencer`);status.textContent=`Prochaine pub de 1 AB dans ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;return}button.dataset.timer='!';button.setAttribute('aria-label','Le rappel de publicité de 1 AB est arrivé; appuyez pour relancer 20 minutes');status.textContent='La pub de 1 AB devrait être disponible. Retournez dans Atlas Earth.';if(safeGet(AD_FIRED_KEY)!==String(due)){safeSet(AD_FIRED_KEY,due);if('Notification'in window&&Notification.permission==='granted')new Notification('Atlas Earth · pub disponible',{body:'La vidéo publicitaire donnant 1 AB devrait être disponible.'})}}
 if($('adReminderButton'))$('adReminderButton').onclick=async()=>{if('Notification'in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch{}}const due=Date.now()+AD_WAIT;safeSet(AD_TIMER_KEY,due);safeSet(AD_FIRED_KEY,'');tickAdReminder()};
-setInterval(tickAdReminder,1000);tickAdReminder();calc();
+setInterval(tickAdReminder,1000);tickAdReminder();
 
 
 // PWA installation: Android/Chrome prompt; iPhone/iPad users receive Safari instructions.
@@ -131,6 +131,27 @@ function showPage(name,{updateHash=false}={}){
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>showPage(button.dataset.nav,{updateHash:true})));
 window.addEventListener('hashchange',()=>showPage(location.hash.slice(1)));
 showPage(location.hash.slice(1));
+
+// Keep the player's working profile on this device, including the selected boost scenario.
+const PROFILE_STORAGE_KEY='atlas-objectif-player-profile-v1';
+const PROFILE_FIELD_IDS=['common','rare','epic','legendary','badges','ab','boostHours','srbHours','target'];
+function readSavedProfile(){try{return JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY)||'null')}catch{return null}}
+function savePlayerProfile(){
+ const values=Object.fromEntries(PROFILE_FIELD_IDS.map(id=>[id,$(id)?.value??'']));
+ try{localStorage.setItem(PROFILE_STORAGE_KEY,JSON.stringify({...values,scenario:state.scenario}))}catch{}
+}
+function restorePlayerProfile(){
+ const saved=readSavedProfile();if(!saved||typeof saved!=='object')return;
+ for(const id of PROFILE_FIELD_IDS){if(typeof saved[id]==='string'&&$(id))$(id).value=saved[id]}
+ if(['prudent','habituel','optimise'].includes(saved.scenario)){
+  state.scenario=saved.scenario;
+  document.querySelectorAll('.scenario-pill').forEach(button=>button.classList.toggle('active',button.dataset.scenario===state.scenario));
+ }
+}
+restorePlayerProfile();
+PROFILE_FIELD_IDS.forEach(id=>$(id)?.addEventListener('input',savePlayerProfile));
+document.querySelectorAll('.scenario-pill').forEach(button=>button.addEventListener('click',savePlayerProfile));
+calc();
 
 // Move each navigation target into its own app-level viewport.
 const appMain=document.querySelector('main');
