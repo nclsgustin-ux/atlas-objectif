@@ -65,6 +65,20 @@ function renderTierChart(p,badges,hours,currentTotal){
  const labels=[1,Math.round(maxPlots*.25),Math.round(maxPlots*.5),Math.round(maxPlots*.75),maxPlots].map(n=>`<text x="${x(n)}" y="${H-8}" text-anchor="middle" fill="#9aab9e" font-size="10">${n}</text>`).join('');
  svg.innerHTML=`${grid}<path d="${points}" fill="none" stroke="#bdec83" stroke-width="2.5" stroke-linejoin="round"/><line x1="${currentX}" y1="${T}" x2="${currentX}" y2="${H-B}" stroke="#f5c76b" stroke-dasharray="4 4"/><circle cx="${currentX}" cy="${currentY}" r="5" fill="#f5c76b"/><text x="${Math.min(W-70,currentX+8)}" y="${Math.max(T+13,currentY-9)}" fill="#fff0c6" font-size="10">${fmtInt(currentTotal)} parcelles</text>${labels}<text x="${W-R}" y="${H-8}" text-anchor="end" fill="#9aab9e" font-size="9">Parcelles</text>`;
 }
+function renderParcelSimulation(p,badges,hours,total){
+ const savedAB=Math.floor(number('ab')),extraAB=Math.floor(number('simulationAb')),budget=savedAB+extraAB;
+ const parcelCount=Math.floor(budget/state.parcelCost),spent=parcelCount*state.parcelCost,left=budget-spent,afterTotal=total+parcelCount;
+ const before=monthly(p,badges,hours,{srb:true}),after=monthly(expectedParcels(p,parcelCount),badges,hours,{srb:true});
+ const currentTier=tier(total||1),nextTier=tier(afterTotal||1),change=after.value-before.value;
+ set('simulationParcels',`${fmtInt(parcelCount)} parcelle${parcelCount===1?'':'s'} achetable${parcelCount===1?'':'s'}`);
+ set('simulationReserve',`${fmtInt(savedAB)} AB`);set('simulationAdded',`${fmtInt(extraAB)} AB`);set('simulationBudget',`${fmtInt(budget)} AB`);set('simulationLeft',`${fmtInt(left)} AB`);
+ set('simulationBefore',`${fmt(before.value)} € / mois`);set('simulationAfter',`${fmt(after.value)} € / mois`);
+ const changeEl=$('simulationChange');if(changeEl){changeEl.textContent=`${change>=0?'+':'−'}${fmt(Math.abs(change))} € / mois`;changeEl.classList.toggle('negative',change<0);changeEl.classList.toggle('positive',change>=0)}
+ if(parcelCount===0)set('simulationTier',`Il faut ${fmtInt(state.parcelCost-budget)} AB de plus pour acheter une parcelle. Le loyer reste au palier ${currentTier.mult}×.`);
+ else if(currentTier.mult!==nextTier.mult)set('simulationTier',`Le total passerait de ${fmtInt(total)} à ${fmtInt(afterTotal)} parcelles : le boost descend de ${currentTier.mult}× à ${nextTier.mult}×. Cette baisse est déjà incluse dans le loyer estimé après achat.`);
+ else set('simulationTier',`Le total passerait de ${fmtInt(total)} à ${fmtInt(afterTotal)} parcelles. Tu restes dans le palier ${nextTier.mult}×, jusqu’à ${fmtInt(nextTier.max)} parcelles.`);
+ set('simulationNote',`Estimation fondée sur tes parcelles, tes ${fmtInt(badges)} badges, ${hours} h de boost par jour et ${fmtInt(number('srbHours'))} h de SRB par mois. Les nouvelles parcelles suivent une rareté moyenne estimée (50 % communes, 30 % rares, 15 % épiques, 5 % légendaires).`);
+}
 function calc(){
  const parcels=parcelState(),total=totalParcels(parcels),badges=Math.floor(number('badges')),ab=Math.floor(number('ab')),askedTarget=number('target'),hours=boostedHours(),srbHours=number('srbHours');
  const current=monthly(parcels,badges,hours,{srb:true});set('monthlyIncome',`${fmt(current.value)} €`);set('baseIncome',`${fmt(current.base)} €`);set('passportBonus',`${badgePct(badges)} %`);set('totalParcels',fmtInt(total));
@@ -98,6 +112,7 @@ function calc(){
  const nextBadgeGoal=passportGoals.find(goal=>goal>selectedPlan.badges);if(nextBadgeGoal){const badgeNeed=nextBadgeGoal-selectedPlan.badges,badgeBonus=badgePct(nextBadgeGoal)-badgePct(selectedPlan.badges);if(badgeBonus)set('roadmapCap',`${$('roadmapCap').textContent} Le prochain bonus permanent est à ${fmtInt(nextBadgeGoal)} badges (+${badgeBonus} %); il en manque ${badgeNeed}, soit environ ${fmtInt(badgeNeed*state.badgeCost)} AB. Achetez-les lors d’un déplacement dans une zone éligible.`)}
  const jump=profitableJump(selectedPlan.p,selectedPlan.badges,hours,planTotal);if(jump){const totalPlots=Math.max(0,jump.target-planTotal),extraAfterCap=Math.max(0,jump.target-Math.max(planTotal,cap));set('roadmapJump',`Un « saut de palier », c’est économiser puis acheter plusieurs parcelles d’un coup après une baisse de boost. Le calcul estime qu’à ${fmtInt(jump.target)} parcelles (${jump.mult}×), votre loyer mensuel retrouve ou dépasse celui du haut du palier précédent. Depuis le plan conseillé, gardez ${fmtInt(totalPlots*state.parcelCost)} AB (${fmtInt(totalPlots)} parcelles) avant de reprendre. Après ${fmtInt(cap)}, il faudra encore ${fmtInt(extraAfterCap)} parcelles (${fmtInt(extraAfterCap*state.parcelCost)} AB).`)}else set('roadmapJump',`Vous êtes dans le dernier palier disponible du tableau (2×). Continuer d’acheter augmente alors le revenu sans nouveau seuil de baisse.`);
  set('assumptionText',`Revenu estimé = loyer de base × bonus passeport × boosts publicitaires (${hours} h/j au multiplicateur France ${current.m}×) + ${fmtInt(srbHours)} h de SRB mensuelles à 50×. Le SRB est compris dans le chiffre principal. Conversion USD→EUR indicative et modifiable.`);
+ renderParcelSimulation(parcels,badges,hours,total);
 }
 function openModal(){$('modal').classList.add('open')}function closeModal(){$('modal').classList.remove('open')}
 $('settingsOpen').onclick=openModal;$('sourcesOpen').onclick=openModal;$('modalClose').onclick=closeModal;$('modal').onclick=e=>{if(e.target===$('modal'))closeModal()};$('detailsToggle').onclick=openModal;
@@ -120,7 +135,7 @@ if(installButton){installButton.hidden=isInstalled();window.addEventListener('be
 if('serviceWorker'in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
 // Focused app sections with bottom navigation; hash keeps the current page shareable.
-const pageNames=['accueil','profil','strategie','boosts'];
+const pageNames=['accueil','profil','strategie','boosts','simulation'];
 function showPage(name,{updateHash=false}={}){
  const page=pageNames.includes(name)?name:'accueil';
  document.querySelectorAll('main [data-page]').forEach(view=>{view.hidden=view.dataset.page!==page});
@@ -134,7 +149,7 @@ showPage(location.hash.slice(1));
 
 // Keep the player's working profile on this device, including the selected boost scenario.
 const PROFILE_STORAGE_KEY='atlas-objectif-player-profile-v1';
-const PROFILE_FIELD_IDS=['common','rare','epic','legendary','badges','ab','boostHours','srbHours','target'];
+const PROFILE_FIELD_IDS=['common','rare','epic','legendary','badges','ab','boostHours','srbHours','target','simulationAb'];
 function readSavedProfile(){try{return JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY)||'null')}catch{return null}}
 function savePlayerProfile(){
  const values=Object.fromEntries(PROFILE_FIELD_IDS.map(id=>[id,$(id)?.value??'']));
@@ -170,3 +185,4 @@ if(appMain&&homeShell&&workspace&&inputsPage&&dashboardPage&&strategyPage&&boost
  workspace.remove();
 }
 showPage(location.hash.slice(1));
+if($('simulationProfileLink'))$('simulationProfileLink').addEventListener('click',()=>showPage('profil',{updateHash:true}));
