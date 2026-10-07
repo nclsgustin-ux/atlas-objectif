@@ -48,3 +48,13 @@ main>.inputs[data-page="profil"]{width:100%;max-width:760px;margin:18px auto;ali
 main>.page-view[data-page="strategie"],main>.page-view[data-page="boosts"]{padding-top:18px}
 main>footer{display:none}
 @media(max-width:600px){main{padding:0 15px 78px}.inputs[data-page="profil"]{margin:12px auto}.topbar{flex:0 0 60px}}
+
+/* Bottom navigation fills the handset edge, including the iOS safe area. */
+@media(max-width:600px){
+ .bottom-nav{left:0;right:0;bottom:0;transform:none;width:100%;max-width:none;min-height:calc(64px + env(safe-area-inset-bottom,0px));padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));gap:5px;border:0;border-top:1px solid #405147;border-radius:0;background:#17231f;box-shadow:0 -8px 24px #0009;backdrop-filter:none}
+ .nav-item{min-height:50px}
+ main{padding-bottom:0}
+ main>.page-view:not([hidden]),main>.inputs[data-page]:not([hidden]){padding-bottom:calc(74px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+ main>.page-view[data-page="accueil"]:not([hidden]){padding-bottom:0}
+ main>.page-view[data-page="accueil"]>.page-view{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+}
