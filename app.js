@@ -135,10 +135,11 @@ setInterval(tickAdReminder,1000);tickAdReminder();
 const installButton=$('installAppButton');let deferredInstallPrompt=null;
 const isInstalled=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 if(installButton){installButton.hidden=isInstalled();window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installButton.hidden=false});window.addEventListener('appinstalled',()=>{installButton.hidden=true;deferredInstallPrompt=null});installButton.addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installButton.hidden=true;return}const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?'Pour installer : ouvre cette page dans Safari, touche Partager, puis « Sur l’écran d’accueil ».':'Pour installer : ouvre le menu du navigateur puis choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».')})}
-if('serviceWorker'in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+const nativeWebView=location.hostname==='localhost'||location.protocol==='capacitor:'||location.protocol==='ionic:';
+if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
 // Focused app sections with bottom navigation; hash keeps the current page shareable.
-const pageNames=['accueil','profil','strategie','boosts','simulation'];
+const pageNames=['accueil','profil','strategie','boosts','simulation','cagnotte'];
 function showPage(name,{updateHash=false}={}){
  const page=pageNames.includes(name)?name:'accueil';
  document.querySelectorAll('main [data-page]').forEach(view=>{view.hidden=view.dataset.page!==page});
@@ -189,3 +190,34 @@ if(appMain&&homeShell&&workspace&&inputsPage&&dashboardPage&&strategyPage&&boost
 }
 showPage(location.hash.slice(1));
 if($('simulationProfileLink'))$('simulationProfileLink').addEventListener('click',()=>showPage('profil',{updateHash:true}));
+
+// Monthly rent balance ledger, stored separately from the player's strategy profile.
+const SAVINGS_STORAGE_KEY='atlas-objectif-monthly-savings-v1';
+const monthInput=$('savingsMonth');
+const today=new Date();const currentMonth=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+function readSavings(){try{const data=JSON.parse(localStorage.getItem(SAVINGS_STORAGE_KEY)||'[]');return Array.isArray(data)?data.filter(x=>x&&/^\d{4}-\d{2}$/.test(x.month)&&Number.isFinite(Number(x.start))&&(x.end===''||x.end===null||Number.isFinite(Number(x.end)))):[]}catch{return []}}
+function money(value){return `${fmt(value)} €`}
+function savingsChangeText(delta,previous){const percent=previous===0?null:delta/Math.abs(previous)*100;return `${delta>=0?'+':'−'}${money(Math.abs(delta))}${percent===null?'':` (${percent>=0?'+':'−'}${fmt(Math.abs(percent),0)} %)`}`}
+function monthLabel(value){const [year,month]=value.split('-').map(Number);return new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date(year,month-1,1))}
+function previousSavingsEntry(entries,month){return entries.filter(item=>item.month<month).sort((a,b)=>b.month.localeCompare(a.month))[0]}
+function renderSavings({loadForm=true}={}){
+ const entries=readSavings().sort((a,b)=>a.month.localeCompare(b.month));
+ const month=monthInput?.value||currentMonth;const existing=entries.find(item=>item.month===month);
+ if(loadForm){if(existing){$('savingsStart').value=existing.start;$('savingsEnd').value=existing.end===''||existing.end===null?'':existing.end}
+ else{const previous=previousSavingsEntry(entries,month);$('savingsStart').value=previous&&previous.end!==''&&previous.end!==null?previous.end:'0';$('savingsEnd').value=''}}
+ const closed=entries.filter(item=>item.end!==''&&item.end!==null).sort((a,b)=>a.month.localeCompare(b.month));
+ const latest=entries.at(-1);$('savingsTotal').textContent=latest?money(latest.end===''||latest.end===null?Number(latest.start):Number(latest.end)):money(0);
+ const start=Number($('savingsStart').value),end=$('savingsEnd').value===''?null:Number($('savingsEnd').value);
+ const monthGain=end!==null?end-start:null;const thisMonth=$('savingsThisMonth');thisMonth.textContent=monthGain===null?'En cours':`${monthGain>=0?'+':'−'}${money(Math.abs(monthGain))}`;thisMonth.classList.toggle('negative',monthGain!==null&&monthGain<0);thisMonth.classList.toggle('positive',monthGain!==null&&monthGain>=0);
+ const prior=previousSavingsEntry(closed,month);const priorGain=prior?Number(prior.end)-Number(prior.start):null;const delta=monthGain!==null&&priorGain!==null?monthGain-priorGain:null;const change=$('savingsChange');change.textContent=delta===null?'—':`${savingsChangeText(delta,priorGain)} vs ${monthLabel(prior.month)}`;change.classList.toggle('negative',delta!==null&&delta<0);change.classList.toggle('positive',delta!==null&&delta>=0);
+ const host=$('savingsHistory');host.innerHTML=entries.length?entries.slice().reverse().map(item=>{const gain=item.end===''||item.end===null?null:Number(item.end)-Number(item.start);const older=closed.filter(x=>x.month<item.month).sort((a,b)=>b.month.localeCompare(a.month))[0];const olderGain=older?Number(older.end)-Number(older.start):null;const changeValue=gain!==null&&olderGain!==null?gain-olderGain:null;return `<tr><td>${monthLabel(item.month)}</td><td>${money(Number(item.start))}</td><td>${item.end===''||item.end===null?'En cours':money(Number(item.end))}</td><td>${gain===null?'—':`${gain>=0?'+':'−'}${money(Math.abs(gain))}`}</td><td>${changeValue===null?'—':savingsChangeText(changeValue,olderGain)}</td></tr>`}).join(''):'<tr><td colspan="5">Aucun mois enregistré.</td></tr>';
+}
+if(monthInput){monthInput.value=currentMonth;monthInput.addEventListener('change',renderSavings)}
+['savingsStart','savingsEnd'].forEach(id=>$(id)?.addEventListener('input',()=>renderSavings({loadForm:false})));
+$('saveSavingsMonth')?.addEventListener('click',()=>{
+ const month=monthInput.value,start=Number($('savingsStart').value),rawEnd=$('savingsEnd').value,end=rawEnd===''?'':Number(rawEnd);
+ if(!month||!Number.isFinite(start)||start<0||rawEnd!==''&&(!Number.isFinite(end)||end<0)){$('savingsStatus').textContent='Vérifie le mois et les montants saisis.';return}
+ const entries=readSavings();const index=entries.findIndex(item=>item.month===month);const record={month,start:Number(start.toFixed(2)),end:end===''?'':Number(end.toFixed(2))};if(index>=0)entries[index]=record;else entries.push(record);
+ try{localStorage.setItem(SAVINGS_STORAGE_KEY,JSON.stringify(entries));$('savingsStatus').textContent=end===''?`${monthLabel(month)} est enregistré. Tu pourras ajouter le solde de fin quand le mois sera terminé.`:`${monthLabel(month)} enregistré : ${money(end-start)} gagnés ce mois.`;renderSavings()}catch{$('savingsStatus').textContent='Enregistrement impossible sur cet appareil.'}
+});
+renderSavings();
