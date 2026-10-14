@@ -142,3 +142,15 @@ main>footer{display:none}
  .savings-history .boost-table td:nth-child(5)::before{content:"Évolution"}
  .savings-history .boost-table td[colspan]{grid-column:1/-1;display:block;border:0;text-align:left}
 }
+
+/* Safe-area and intrinsic-width fixes for installed iPhone web apps. */
+@media(max-width:600px){
+ .topbar{height:calc(60px + env(safe-area-inset-top,0px));flex-basis:calc(60px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+ main{width:100%;min-width:0}
+ .savings-page,.savings-page>*{box-sizing:border-box;max-width:100%;min-width:0}
+ .savings-page{width:100%;overflow-x:hidden}
+ .savings-fields{grid-template-columns:minmax(0,1fr);min-width:0}
+ .savings-fields>label,.savings-fields .input-suffix{width:100%;max-width:100%;min-width:0}
+ .savings-fields input{width:100%;max-width:100%;min-width:0}
+ .savings-page .simulation-intro>p:last-child{overflow-wrap:anywhere}
+}
