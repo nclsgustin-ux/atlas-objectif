@@ -152,5 +152,8 @@ main>footer{display:none}
  .savings-fields{grid-template-columns:minmax(0,1fr);min-width:0}
  .savings-fields>label,.savings-fields .input-suffix{width:100%;max-width:100%;min-width:0}
  .savings-fields input{width:100%;max-width:100%;min-width:0}
+ .savings-fields .input-suffix{display:flex;align-items:center;overflow:hidden}
+ .savings-fields .input-suffix input{flex:1 1 0;width:auto;min-width:0;height:34px;border:0;border-radius:0;background:transparent;padding:0 10px}
+ .savings-fields .input-suffix>span{flex:0 0 auto;padding-left:8px}
  .savings-page .simulation-intro>p:last-child{overflow-wrap:anywhere}
 }
