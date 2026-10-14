@@ -115,14 +115,30 @@ main>footer{display:none}
 .savings-history .boost-table{min-width:550px}
 @media(max-width:600px){
  .bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding-left:5px;padding-right:5px}
- .nav-item{font-size:7px;padding-left:0;padding-right:0;gap:2px}
- .nav-icon{font-size:17px}
+ .nav-item{font-size:8px;padding-left:0;padding-right:0;gap:3px}
+ .nav-icon{font-size:18px}
  .savings-page{padding:15px 0 16px}
  .savings-form{padding:13px}
  .savings-fields{grid-template-columns:1fr;gap:10px}
- .savings-summary{gap:5px}
- .savings-summary article{padding:10px 8px}
- .savings-summary article span{font-size:8px}
- .savings-summary article b{font-size:13px}
+ .savings-fields input{min-width:0;font-size:16px}
+ .savings-form .primary-button{width:100%;min-height:42px}
+ .savings-summary{grid-template-columns:1fr;gap:7px;margin:9px 0}
+ .savings-summary article{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px}
+ .savings-summary article span{max-width:60%;font-size:10px}
+ .savings-summary article b{flex:0 0 auto;margin-top:0;font-size:14px;text-align:right}
  .savings-history{padding:13px 11px}
+ .savings-history .boost-table-wrap{overflow:visible;margin:10px 0 0}
+ .savings-history .boost-table{display:block;width:100%;min-width:0;table-layout:auto;font-size:11px}
+ .savings-history .boost-table thead{display:none}
+ .savings-history .boost-table tbody{display:grid;gap:8px}
+ .savings-history .boost-table tr{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;padding:8px 10px;border:1px solid #34483b;border-radius:7px;background:#111b18}
+ .savings-history .boost-table td{display:flex;justify-content:space-between;gap:8px;min-width:0;padding:7px 0;border-bottom:1px solid #293831;white-space:normal;text-align:right;font-size:10px}
+ .savings-history .boost-table td::before{color:#94a69a;text-align:left;font-size:9px}
+ .savings-history .boost-table td:nth-child(1){grid-column:1/-1;justify-content:flex-start;padding-top:2px;color:#d9f0b7;font-weight:700;text-align:left}
+ .savings-history .boost-table td:nth-child(1)::before{content:none}
+ .savings-history .boost-table td:nth-child(2)::before{content:"Début"}
+ .savings-history .boost-table td:nth-child(3)::before{content:"Fin"}
+ .savings-history .boost-table td:nth-child(4)::before{content:"Gagné"}
+ .savings-history .boost-table td:nth-child(5)::before{content:"Évolution"}
+ .savings-history .boost-table td[colspan]{grid-column:1/-1;display:block;border:0;text-align:left}
 }
