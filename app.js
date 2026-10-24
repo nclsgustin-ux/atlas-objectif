@@ -136,7 +136,7 @@ const installButton=$('installAppButton');let deferredInstallPrompt=null;
 const isInstalled=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 if(installButton){installButton.hidden=isInstalled();window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installButton.hidden=false});window.addEventListener('appinstalled',()=>{installButton.hidden=true;deferredInstallPrompt=null});installButton.addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installButton.hidden=true;return}const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?'Pour installer : ouvre cette page dans Safari, touche Partager, puis « Sur l’écran d’accueil ».':'Pour installer : ouvre le menu du navigateur puis choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».')})}
 const nativeWebView=location.hostname==='localhost'||location.protocol==='capacitor:'||location.protocol==='ionic:';
-if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261014-2',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}));
+if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261024-1',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}));
 
 // Focused app sections with bottom navigation; hash keeps the current page shareable.
 const pageNames=['accueil','profil','strategie','boosts','simulation','cagnotte'];
@@ -221,3 +221,52 @@ $('saveSavingsMonth')?.addEventListener('click',()=>{
  try{localStorage.setItem(SAVINGS_STORAGE_KEY,JSON.stringify(entries));$('savingsStatus').textContent=end===''?`${monthLabel(month)} est enregistré. Tu pourras ajouter le solde de fin quand le mois sera terminé.`:`${monthLabel(month)} enregistré : ${money(end-start)} gagnés ce mois.`;renderSavings()}catch{$('savingsStatus').textContent='Enregistrement impossible sur cet appareil.'}
 });
 renderSavings();
+
+// Screenshot OCR: recognition runs in a browser worker; the image stays on this device.
+const parcelKeys=['common','rare','epic','legendary'];
+let ocrWorkerPromise=null,ocrScriptPromise=null,pendingOcr=null;
+function loadOcrLibrary(){
+ if(window.Tesseract)return Promise.resolve(window.Tesseract);
+ if(ocrScriptPromise)return ocrScriptPromise;
+ ocrScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js';script.async=true;script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('Le moteur OCR ne s’est pas chargé.'));script.onerror=()=>reject(new Error('Impossible de télécharger le moteur OCR. Vérifie ta connexion internet puis réessaie.'));document.head.append(script)}).catch(error=>{ocrScriptPromise=null;throw error});
+ return ocrScriptPromise;
+}
+async function getOcrWorker(){
+ const Tesseract=await loadOcrLibrary();
+ if(!ocrWorkerPromise)ocrWorkerPromise=Tesseract.createWorker('eng',1,{logger:message=>{if(message.status==='recognizing text')set('ocrStatus',`Lecture de la capture… ${Math.round((message.progress||0)*100)} %`)}}).catch(error=>{ocrWorkerPromise=null;throw error});
+ return ocrWorkerPromise;
+}
+async function prepareOcrImage(file){
+ let bitmap;
+ try{bitmap=await createImageBitmap(file)}catch{
+  bitmap=await new Promise((resolve,reject)=>{const image=new Image(),url=URL.createObjectURL(file);image.onload=()=>{URL.revokeObjectURL(url);resolve(image)};image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cette image ne peut pas être ouverte. Choisis une capture PNG ou JPEG.'))};image.src=url});
+ }
+ const scale=Math.min(1,2200/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();return canvas.toDataURL('image/jpeg',.92);
+}
+function normalizedOcrWord(text){return String(text||'').toLowerCase().replace(/[^a-z]/g,'')}
+function ocrInteger(text){const raw=String(text||'').trim();if(!/^\d{1,3}(?:[,.\s]\d{3})*$|^\d{1,6}$/.test(raw))return null;const value=Number(raw.replace(/[,.\s]/g,''));return Number.isInteger(value)&&value>=0&&value<=100000?value:null}
+function readCountsFromWords(words,type){
+ const definitions=type==='parcels'?[['common',w=>/^commons?$/.test(w)],['rare',w=>/^rares?$/.test(w)],['epic',w=>/^epics?$/.test(w)],['legendary',w=>/^legend(ar|er)y$/.test(w)]]:[['badges',w=>/^badges?$/.test(w)]];
+ const labels=[];for(const [key,matches] of definitions)for(const word of words){if(matches(normalizedOcrWord(word.text)))labels.push({key,word})}
+ const numbers=[];for(let index=0;index<words.length;index++){const value=ocrInteger(words[index].text);if(value===null)continue;const next=normalizedOcrWord(words[index+1]?.text);if(next==='percent'||next==='percentage')continue;numbers.push({word:words[index],value,index})}
+ const pairs=[];for(const label of labels)for(const number of numbers){const a=label.word.bbox||{},b=number.word.bbox||{};const ah=Math.max(1,(a.y1||0)-(a.y0||0)),bh=Math.max(1,(b.y1||0)-(b.y0||0));const dy=Math.abs(((a.y0||0)+(a.y1||0))/2-((b.y0||0)+(b.y1||0))/2);const dx=((b.x0||0)+(b.x1||0))/2-((a.x0||0)+(a.x1||0))/2;if(dy>Math.max(90,ah*3,bh*3))continue;const score=dy*1.8+Math.max(0,-dx)*.55+Math.max(0,dx)*.08;pairs.push({key:label.key,number,score})}
+ pairs.sort((a,b)=>a.score-b.score);const found={},usedNumbers=new Set();for(const pair of pairs){if(found[pair.key]||usedNumbers.has(pair.number.index))continue;found[pair.key]={value:pair.number.value,confidence:Number(pair.number.word.confidence)||0};usedNumbers.add(pair.number.index)}return found;
+}
+function renderOcrReview(type,found){
+ pendingOcr={type,found};const host=$('ocrDetectedValues');host.replaceChildren();const fields=type==='parcels'?parcelKeys.filter(key=>found[key]):found.badges?['badges']:[];
+ if(!fields.length){$('ocrReview').hidden=true;set('ocrStatus',type==='parcels'?'Aucune quantité par rareté reconnue. Choisis une capture où les lignes Communes, Rares, Épiques et Légendaires sont visibles.':'Nombre de badges non reconnu. Choisis une capture où le total de badges est visible.');return}
+ for(const key of fields){const labelText=key==='common'?'Parcelles communes':key==='rare'?'Parcelles rares':key==='epic'?'Parcelles épiques':key==='legendary'?'Parcelles légendaires':'Badges de passeport';const field=document.createElement('label');field.className='ocr-value-field';field.htmlFor=`ocrValue-${key}`;field.textContent=labelText;const input=document.createElement('input');input.id=`ocrValue-${key}`;input.type='number';input.min='0';input.step='1';input.inputMode='numeric';input.value=found[key].value;input.dataset.ocrField=key;field.append(input);host.append(field)}
+ const partial=type==='parcels'&&fields.length<parcelKeys.length;$('ocrReviewNote').textContent=partial?'Certaines raretés n’ont pas été lues. Seules les valeurs affichées seront modifiées; les autres garderont leur valeur actuelle.':'Relis les nombres et corrige-les si nécessaire avant de les appliquer.';$('ocrReview').hidden=false;set('ocrStatus',`Lecture terminée : ${fields.length} valeur${fields.length>1?'s':''} détectée${fields.length>1?'s':''}.`);
+}
+async function processScreenshot(file,type){
+ if(!file)return;if(!file.type.startsWith('image/')){set('ocrStatus','Choisis un fichier image (PNG ou JPEG).');return}if(file.size>25*1024*1024){set('ocrStatus','Cette image dépasse 25 Mo. Fais une capture ou réduis sa taille avant de réessayer.');return}
+ $('ocrReview').hidden=true;set('ocrStatus','Préparation de la capture…');for(const id of ['parcelScreenshot','badgeScreenshot'])if($(id))$(id).disabled=true;
+ try{const source=await prepareOcrImage(file);set('ocrStatus','Chargement du moteur de lecture…');const worker=await getOcrWorker();const result=await worker.recognize(source);const found=readCountsFromWords(result.data.words||[],type);renderOcrReview(type,found)}catch(error){set('ocrStatus',error?.message||'La capture n’a pas pu être lue. Essaie une image plus nette.')}
+ finally{for(const id of ['parcelScreenshot','badgeScreenshot'])if($(id))$(id).disabled=false}
+}
+for(const [id,type] of [['parcelScreenshot','parcels'],['badgeScreenshot','badges']])$(id)?.addEventListener('change',event=>{const file=event.target.files?.[0];processScreenshot(file,type);event.target.value='' });
+$('applyOcrValues')?.addEventListener('click',()=>{
+ if(!pendingOcr)return;const fields=[...$('ocrDetectedValues').querySelectorAll('[data-ocr-field]')];for(const input of fields){const value=Number(input.value);if(!Number.isInteger(value)||value<0){set('ocrStatus','Vérifie les nombres : ils doivent être des entiers positifs ou nuls.');input.focus();return}}
+ for(const input of fields){const target=$(input.dataset.ocrField);target.value=input.value;target.dispatchEvent(new Event('input',{bubbles:true}))}savePlayerProfile();calc();$('ocrReview').hidden=true;set('ocrStatus','Les valeurs vérifiées ont été appliquées et enregistrées dans ton profil.');pendingOcr=null;
+});
+$('cancelOcrReview')?.addEventListener('click',()=>{$('ocrReview').hidden=true;pendingOcr=null;set('ocrStatus','Import annulé. Ton profil n’a pas été modifié.')});
