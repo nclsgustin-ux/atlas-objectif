@@ -136,7 +136,7 @@ const installButton=$('installAppButton');let deferredInstallPrompt=null;
 const isInstalled=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 if(installButton){installButton.hidden=isInstalled();window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installButton.hidden=false});window.addEventListener('appinstalled',()=>{installButton.hidden=true;deferredInstallPrompt=null});installButton.addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installButton.hidden=true;return}const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?'Pour installer : ouvre cette page dans Safari, touche Partager, puis « Sur l’écran d’accueil ».':'Pour installer : ouvre le menu du navigateur puis choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».')})}
 const nativeWebView=location.hostname==='localhost'||location.protocol==='capacitor:'||location.protocol==='ionic:';
-if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261024-1',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}));
+if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261024-2',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}));
 
 // Focused app sections with bottom navigation; hash keeps the current page shareable.
 const pageNames=['accueil','profil','strategie','boosts','simulation','cagnotte'];

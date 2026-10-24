@@ -202,3 +202,26 @@ main>.page-view[data-page="accueil"]>.page-view{padding-bottom:174px;scroll-padd
  main>.page-view[data-page="accueil"]:not([hidden]){padding-bottom:0}
  main>.page-view[data-page="accueil"]>.page-view{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
 }
+
+/* Store-ready ad slot: fixed reserved area, separated from navigation. */
+.timer-button{width:50px;height:50px;flex:0 0 50px;font-size:0}
+.timer-icon{display:block;width:31px;height:31px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.timer-button::after{min-width:27px;height:17px;padding:0 4px;font-size:9px;line-height:17px}
+.ad-banner-slot{bottom:92px;width:min(728px,calc(100% - 32px));height:90px;border:1px solid #405147;border-bottom:2px solid #536356;border-radius:4px;background:#14201c}
+.ad-banner-slot .ad-banner-mark{border-radius:4px}
+main>.page-view:not([hidden]),main>.inputs[data-page]:not([hidden]){padding-bottom:192px;scroll-padding-bottom:192px}
+main>.page-view[data-page="accueil"]:not([hidden]){padding-bottom:0}
+main>.page-view[data-page="accueil"]>.page-view{padding-bottom:192px;scroll-padding-bottom:192px}
+@media(max-width:600px){
+ .top-right .timer-button{width:52px;height:52px;flex-basis:52px}
+ .timer-icon{width:32px;height:32px}
+ .ad-banner-slot{bottom:calc(72px + env(safe-area-inset-bottom,0px));width:min(320px,calc(100% - 24px));height:50px;border:1px solid #405147;border-radius:4px;background:#14201cf5}
+ main>.page-view:not([hidden]),main>.inputs[data-page]:not([hidden]){padding-bottom:calc(138px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))}
+ main>.page-view[data-page="accueil"]:not([hidden]){padding-bottom:0}
+ main>.page-view[data-page="accueil"]>.page-view{padding-bottom:calc(138px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))}
+}
+.ad-banner-slot{background:#fff;color:#24302a;border-color:#f1c644;border-left-width:10px}
+.ad-banner-slot b{color:#24302a}
+.ad-banner-slot small{color:#68746d}
+.ad-banner-slot .ad-banner-mark{background:#f1c644;border-color:#f1c644;color:#fff}
+@media(max-width:600px){.ad-banner-slot{background:#fff;border-color:#f1c644;border-left-width:10px}}
