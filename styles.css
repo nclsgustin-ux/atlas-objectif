@@ -215,7 +215,7 @@ main>.page-view[data-page="accueil"]>.page-view{padding-bottom:192px;scroll-padd
 @media(max-width:600px){
  .top-right .timer-button{width:52px;height:52px;flex-basis:52px}
  .timer-icon{width:32px;height:32px}
- .ad-banner-slot{bottom:calc(72px + env(safe-area-inset-bottom,0px));width:min(320px,calc(100% - 24px));height:50px;border:1px solid #405147;border-radius:4px;background:#14201cf5}
+ .ad-banner-slot{bottom:calc(72px + env(safe-area-inset-bottom,0px));width:min(320px,100%);height:50px;border:1px solid #405147;border-radius:4px;background:#14201cf5}
  main>.page-view:not([hidden]),main>.inputs[data-page]:not([hidden]){padding-bottom:calc(138px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))}
  main>.page-view[data-page="accueil"]:not([hidden]){padding-bottom:0}
  main>.page-view[data-page="accueil"]>.page-view{padding-bottom:calc(138px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))}
