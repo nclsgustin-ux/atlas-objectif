@@ -4,6 +4,7 @@ const passportTiers=[[0,0],[1,5],[11,10],[31,15],[61,20],[101,25]];
 const passportGoals=[1,11,31,61,101];
 const regionTiers={france:[[70,20],[100,15],[135,10],[170,8],[200,7],[250,6],[300,5],[350,4],[400,3],[Infinity,2]]};
 const $=id=>document.getElementById(id);
+const privacyLink=document.createElement('p');privacyLink.innerHTML='<a href="privacy.html">Politique de confidentialité</a>';document.querySelector('#modal .modal .settings-grid')?.before(privacyLink);
 const state={parcelCost:100,badgeCost:200,usdEur:.92,seasonCost:9.2,clubCost:46,scenario:'habituel'};
 const FREE_STREAK_30=110,FREE_ADS_30=600,SEASON_PASS_AB=1030,CLUB_STREAK_30=3545,CLUB_ADS_30=600;
 const number=id=>{const n=Number($(id)?.value);return Number.isFinite(n)&&n>0?n:0};
@@ -135,8 +136,8 @@ setInterval(tickAdReminder,1000);tickAdReminder();
 const installButton=$('installAppButton');let deferredInstallPrompt=null;
 const isInstalled=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 if(installButton){installButton.hidden=isInstalled();window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installButton.hidden=false});window.addEventListener('appinstalled',()=>{installButton.hidden=true;deferredInstallPrompt=null});installButton.addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installButton.hidden=true;return}const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(ios?'Pour installer : ouvre cette page dans Safari, touche Partager, puis « Sur l’écran d’accueil ».':'Pour installer : ouvre le menu du navigateur puis choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».')})}
-const nativeWebView=location.hostname==='localhost'||location.protocol==='capacitor:'||location.protocol==='ionic:';
-if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261025-7',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}))}
+const nativeWebView=Boolean(window.Capacitor?.isNativePlatform?.())||location.protocol==='capacitor:'||location.protocol==='ionic:';
+if('serviceWorker'in navigator&&location.protocol!=='file:'&&!nativeWebView){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261025-8',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}))}
 
 // Focused app sections with bottom navigation; hash keeps the current page shareable.
 const pageNames=['accueil','profil','strategie','boosts','simulation','cagnotte'];
@@ -228,12 +229,15 @@ let ocrWorkerPromise=null,ocrScriptPromise=null,pendingOcr=null;
 function loadOcrLibrary(){
  if(window.Tesseract)return Promise.resolve(window.Tesseract);
  if(ocrScriptPromise)return ocrScriptPromise;
- ocrScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js';script.async=true;script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('Le moteur OCR ne s’est pas chargé.'));script.onerror=()=>reject(new Error('Impossible de télécharger le moteur OCR. Vérifie ta connexion internet puis réessaie.'));document.head.append(script)}).catch(error=>{ocrScriptPromise=null;throw error});
+ const scriptUrl=nativeWebView?'./ocr/tesseract.min.js':'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js';
+ ocrScriptPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=scriptUrl;script.async=true;script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('Le moteur OCR ne s’est pas chargé.'));script.onerror=()=>reject(new Error(nativeWebView?'Le moteur OCR intégré est introuvable. Réinstalle la dernière version de l’application.':'Impossible de télécharger le moteur OCR. Vérifie ta connexion internet puis réessaie.'));document.head.append(script)}).catch(error=>{ocrScriptPromise=null;throw error});
  return ocrScriptPromise;
 }
 async function getOcrWorker(){
  const Tesseract=await loadOcrLibrary();
- if(!ocrWorkerPromise)ocrWorkerPromise=Tesseract.createWorker('eng+fra',1,{logger:message=>{if(message.status==='recognizing text')set('ocrStatus',`Lecture de la capture… ${Math.round((message.progress||0)*100)} %`)}}).catch(error=>{ocrWorkerPromise=null;throw error});
+ const workerOptions={logger:message=>{if(message.status==='recognizing text')set('ocrStatus',`Lecture de la capture… ${Math.round((message.progress||0)*100)} %`)}};
+ if(nativeWebView){const root=new URL('./ocr/',document.baseURI).href;Object.assign(workerOptions,{workerPath:`${root}worker.min.js`,corePath:`${root}core/tesseract-core-lstm.wasm.js`,langPath:`${root}lang`,gzip:false})}
+ if(!ocrWorkerPromise)ocrWorkerPromise=Tesseract.createWorker('eng+fra',1,workerOptions).catch(error=>{ocrWorkerPromise=null;throw error});
  return ocrWorkerPromise;
 }
 async function prepareOcrImage(file){
