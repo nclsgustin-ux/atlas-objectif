@@ -24,7 +24,7 @@
 
 <section>
 <h2>Données enregistrées sur votre appareil</h2>
-<p>L’application ne crée pas de compte et n’envoie pas votre profil à un serveur Atlas Objectif. Les informations saisies — parcelles, badges, Atlas Bucks, objectif, hypothèses de calcul, historique de cagnotte et état du minuteur — sont enregistrées dans le stockage local du navigateur ou de l’application sur votre appareil. Elles servent uniquement à restaurer votre profil et à calculer les estimations.</p>
+<p>L’application ne crée pas de compte et n’envoie pas votre profil à un serveur Atlas Objectif. Les informations saisies — parcelles, badges, Atlas Bucks, objectif, hypothèses de calcul, historique de cagnotte et état du minuteur — sont enregistrées dans le stockage local du navigateur ou de l’application sur votre appareil. Elles servent uniquement à restaurer votre profil et à calculer les estimations. Dans l’application native, si vous activez les notifications, l’heure de fin du minuteur est également planifiée localement sur le téléphone; aucune notification push ni donnée de minuteur n’est envoyée à un serveur.</p>
 <p>Ces données restent jusqu’à leur suppression par vous, à la suppression des données de l’application ou du site dans les réglages de l’appareil/navigateur, ou à la désinstallation. Selon vos réglages Android, une sauvegarde système de l’appareil peut aussi inclure certaines données locales. L’éditeur n’a pas accès à ces sauvegardes.</p>
 </section>
 
@@ -36,11 +36,12 @@
 <section>
 <h2>Services tiers et réseau</h2>
 <ul>
-<li>Les polices de caractères peuvent être chargées depuis Google Fonts.</li>
-<li>La version web utilise jsDelivr pour télécharger le moteur OCR et ses modèles lorsqu’une capture est importée.</li>
+<li>Dans la version web, Google Fonts fournit les polices et jsDelivr fournit le moteur OCR et ses modèles au moment de l’import d’une capture. Ces fournisseurs peuvent recevoir des données techniques de connexion.</li>
+<li>Les notifications du rappel sont locales au téléphone et nécessitent l’autorisation du système dans l’application native. La version web dépend des capacités et autorisations du navigateur.</li>
+<li>Dans l’application Android, les polices système et le moteur OCR sont embarqués. L’application ne contacte pas Google Fonts ou jsDelivr pendant l’usage normal.</li>
 <li>L’application contient des liens vers des pages d’aide Atlas Reality et d’autres sources. Si vous ouvrez ces liens, le service tiers applique sa propre politique de confidentialité.</li>
 </ul>
-<p>Ces fournisseurs peuvent recevoir des données techniques nécessaires à la connexion, comme l’adresse IP, le type de navigateur ou l’URL demandée. Atlas Objectif n’intègre actuellement ni outil d’analyse d’audience, ni SDK publicitaire, ni suivi de localisation. L’emplacement « Publicité » affiché dans certaines versions est un espace réservé : aucune annonce n’y est servie.</p>
+<p>Les fournisseurs de la version web peuvent recevoir des données techniques nécessaires à la connexion, comme l’adresse IP, le type de navigateur ou l’URL demandée. Atlas Objectif n’intègre actuellement ni outil d’analyse d’audience, ni SDK publicitaire, ni suivi de localisation. La version native Android/iOS ne sert pas d’annonces. La version web peut afficher un emplacement visuel réservé à une publicité future; aucune annonce n’y est actuellement servie.</p>
 </section>
 
 <section>
